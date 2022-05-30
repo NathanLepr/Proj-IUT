@@ -1,139 +1,155 @@
 #include "mbed.h"
-#include "stm32746g_discovery_audio.h"
-#include "stm32746g_discovery_sdram.h"
+#include "stm32746g_discovery_lcd.h"
+#include "UnbufferedSerial.h"
 
-
-typedef enum {
-    BUFFER_OFFSET_NONE = 0,
-    BUFFER_OFFSET_HALF = 1,
-    BUFFER_OFFSET_FULL = 2,
-} BUFFER_StateTypeDef;
-
-#define AUDIO_BLOCK_SIZE   ((uint32_t)512)
-#define AUDIO_BUFFER_IN     SDRAM_DEVICE_ADDR
-#define AUDIO_BUFFER_OUT   (AUDIO_BUFFER_IN + (AUDIO_BLOCK_SIZE * 2))
-
-volatile uint32_t  audio_rec_buffer_state = BUFFER_OFFSET_NONE;
-    int i, y;
-    uint16_t * ptrMEM;
+//création de l'objet avec l'HC05
+static UnbufferedSerial serial_read(PC_6,PC_7);
 
 int main()
 {
-    printf("\n\nAUDIO LOOPBACK EXAMPLE START:\n");
 
-    BSP_AUDIO_IN_OUT_Init(INPUT_DEVICE_DIGITAL_MICROPHONE_2, OUTPUT_DEVICE_HEADPHONE, DEFAULT_AUDIO_IN_FREQ, DEFAULT_AUDIO_IN_BIT_RESOLUTION, DEFAULT_AUDIO_IN_CHANNEL_NBR);
-    printf("AUDIO loop from digital micro (U20 & U21 components on board) to headphone (CN10 jack connector)\n");
-
-
-    /* Initialize SDRAM buffers */
-    BSP_SDRAM_Init();
-    memset((uint16_t *)AUDIO_BUFFER_IN, 0, AUDIO_BLOCK_SIZE * 2);
-    memset((uint16_t *)AUDIO_BUFFER_OUT, 0, AUDIO_BLOCK_SIZE * 2);
-    printf("SDRAM init done\n");
-
-    //audio_rec_buffer_state = BUFFER_OFFSET_NONE;
-
-    /* Start Recording 
-    if (BSP_AUDIO_IN_Record((uint16_t *)AUDIO_BUFFER_IN, AUDIO_BLOCK_SIZE) != AUDIO_OK) {
-        printf("BSP_AUDIO_IN_Record error\n");
-    }*/
-
-    /* Start Playback */
-    BSP_AUDIO_OUT_SetAudioFrameSlot(CODEC_AUDIOFRAME_SLOT_02);
-    if (BSP_AUDIO_OUT_Play((uint16_t *)AUDIO_BUFFER_OUT, AUDIO_BLOCK_SIZE * 2) != AUDIO_OK) {
-        printf("BSP_AUDIO_OUT_Play error\n");
-    }
+    //initialisation des codes LCD
+    BSP_LCD_Init();
+    BSP_LCD_LayerDefaultInit(LTDC_ACTIVE_LAYER, LCD_FB_START_ADDRESS);
+    BSP_LCD_SelectLayer(LTDC_ACTIVE_LAYER);
+    
+    int data = 0;
+    int datapr = 0;
+        
+    //intro LCD avec plusieurs formes
+    BSP_LCD_Clear(LCD_COLOR_GREEN);
+        BSP_LCD_SetTextColor(LCD_COLOR_BLUE);
+        BSP_LCD_DrawRect(10, 20, 50, 50);
+        BSP_LCD_SetTextColor(LCD_COLOR_BROWN);
+        BSP_LCD_DrawCircle(80, 80, 50);
+        BSP_LCD_SetTextColor(LCD_COLOR_YELLOW);
+        BSP_LCD_DrawEllipse(150, 150, 50, 100);
+        BSP_LCD_SetTextColor(LCD_COLOR_RED);
+        BSP_LCD_FillCircle(200, 200, 40);
+        HAL_Delay(2000);
+        
+    //Remise au propre LCD
+        BSP_LCD_Clear(LCD_COLOR_WHITE);
+        BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
+        BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
+        BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
+        BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"Ul Mickael", CENTER_MODE);
+        BSP_LCD_DisplayStringAt(0, 50, (uint8_t *)"Marie-Louise Killian", CENTER_MODE);
+        BSP_LCD_DisplayStringAt(0, 100, (uint8_t *)"Reina Tibault", CENTER_MODE);
+        BSP_LCD_DisplayStringAt(0, 150, (uint8_t *)"leprevier-Destas Nathan", CENTER_MODE);
+        HAL_Delay(2000);
+        BSP_LCD_DisplayStringAt(0, 200, (uint8_t *)"Synthese Musicale", CENTER_MODE);
+        HAL_Delay(2000);
+        BSP_LCD_Clear(LCD_COLOR_WHITE);
+        
+        
+        /*Init transmission UART*/
+        serial_read.baud(115200); //les bauds de la carte qui a été mesuré
+        serial_read.format(8, SerialBase::None,1);//(nb de bit par trame, pas de parité, un seul stop bit)
+        
 
     while (1) {
-        
-        ptrMEM = (uint16_t *)SDRAM_DEVICE_ADDR;
-        
-        //écriture première moitié de buffer IN
-        
-        for (i=0;i<AUDIO_BLOCK_SIZE;i++)
-        {  
-            if(y<50){
-                *(ptrMEM + i)= 1000;
-                y++;
-            }
-            else if(y>50&&y<100){
-                *(ptrMEM + i)= 0;
-                y++;
-            }
-            else if(y>=100){
-                y=0;
-            }
+        datapr = data;
+        data = 0;
+            /* affichage "lecture du message" sur le LCD si un message peut être lu*/
+        if(serial_read.readable()==true){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"lecture du message", CENTER_MODE);
+            serial_read.read(&data, 1);
         }
+            
+        switch (data){
+            case 0:
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"attente d'une note", CENTER_MODE);
+                break;
+                
+            case 0x01:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing do", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+                
+            case 0x02:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing re", CENTER_MODE);
+                HAL_Delay(200);
+                break;
+                
+            case 0x04:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing mi", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+                
+            case 0x08:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing fa", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+                
+            case 0x10:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing sol", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+                
+            case 0x20:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing la", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+                
+            case 0x40:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing si", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+            
+            case 0x80:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing do", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+                
+            case 0x81:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing do2", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+                
+            case 0x82:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing re2", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+                
+            case 0x84:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing fa2", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+                
+            case 0x88:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing sol2", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+                
+            case 0x90:
+                BSP_LCD_Clear(LCD_COLOR_WHITE);
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing la2", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+            
+            default :
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"note inconnu", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+            }
+                
+                
+            
         
-        /* Wait end of half block recording 
-        while (audio_rec_buffer_state == BUFFER_OFFSET_HALF) {
-        }
-        audio_rec_buffer_state = BUFFER_OFFSET_NONE;*/
 
-        /* Copy de la première moitié du buffer IN dans seconde moitié Buffer OUT */
-        memcpy((uint16_t *)(AUDIO_BUFFER_OUT), (uint16_t *)(AUDIO_BUFFER_IN), AUDIO_BLOCK_SIZE);
-
-        /* Wait end of one block recording 
-        while (audio_rec_buffer_state == BUFFER_OFFSET_FULL) {
-        }
-        audio_rec_buffer_state = BUFFER_OFFSET_NONE;*/
-        
-        ptrMEM = (uint16_t *)SDRAM_DEVICE_ADDR + AUDIO_BLOCK_SIZE;
-        
-        //écriture seconde moitié de buffer IN
-        for (i=0;i<AUDIO_BLOCK_SIZE;i++)
-        {  
-            if(y<50){
-                *(ptrMEM + (AUDIO_BLOCK_SIZE) + i)= 1000;
-                y++;
-            }
-            else if(y>50&&y<100){
-                *(ptrMEM +(AUDIO_BLOCK_SIZE) + i)= 0;
-                y++;
-            }
-            else if(y>=100){
-                y=0;
-            }
-        }
-
-        /* Copy de la seconde moitié du buffer IN dans seconde moitié Buffer OUT */
-        memcpy((uint16_t *)(AUDIO_BUFFER_OUT + (AUDIO_BLOCK_SIZE)), (uint16_t *)(AUDIO_BUFFER_IN + (AUDIO_BLOCK_SIZE)), AUDIO_BLOCK_SIZE);
     }
-}
-
-
-/*-------------------------------------------------------------------------------------
-       Callbacks implementation:
-           the callbacks API are defined __weak in the stm32746g_discovery_audio.c file
-           and their implementation should be done in the user code if they are needed.
-           Below some examples of callback implementations.
-  -------------------------------------------------------------------------------------*/
-/**
-  * @brief Manages the DMA Transfer complete interrupt.
-  * @param None
-  * @retval None
-  */
-void BSP_AUDIO_IN_TransferComplete_CallBack(void)
-{
-    audio_rec_buffer_state = BUFFER_OFFSET_FULL;
-}
-
-/**
-  * @brief  Manages the DMA Half Transfer complete interrupt.
-  * @param  None
-  * @retval None
-  */
-void BSP_AUDIO_IN_HalfTransfer_CallBack(void)
-{
-    audio_rec_buffer_state = BUFFER_OFFSET_HALF;
-}
-
-/**
-  * @brief  Audio IN Error callback function.
-  * @param  None
-  * @retval None
-  */
-void BSP_AUDIO_IN_Error_CallBack(void)
-{
-    printf("BSP_AUDIO_IN_Error_CallBack\n");
 }
