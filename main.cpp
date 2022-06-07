@@ -13,8 +13,9 @@ int main()
     BSP_LCD_LayerDefaultInit(LTDC_ACTIVE_LAYER, LCD_FB_START_ADDRESS);
     BSP_LCD_SelectLayer(LTDC_ACTIVE_LAYER);
     
-    int data = 0;
-    int datapr = 0;
+    char data[2]={0,0};
+    char datapr = 0;
+    int i,y = 0;
         
     //intro LCD avec plusieurs formes
     BSP_LCD_Clear(LCD_COLOR_GREEN);
@@ -29,7 +30,7 @@ int main()
         HAL_Delay(2000);
         
     //Remise au propre LCD
-        BSP_LCD_Clear(LCD_COLOR_WHITE);
+        /*BSP_LCD_Clear(LCD_COLOR_WHITE);
         BSP_LCD_SetFont(&LCD_DEFAULT_FONT);
         BSP_LCD_SetBackColor(LCD_COLOR_WHITE);
         BSP_LCD_SetTextColor(LCD_COLOR_DARKBLUE);
@@ -39,113 +40,218 @@ int main()
         BSP_LCD_DisplayStringAt(0, 150, (uint8_t *)"leprevier-Destas Nathan", CENTER_MODE);
         HAL_Delay(2000);
         BSP_LCD_DisplayStringAt(0, 200, (uint8_t *)"Synthese Musicale", CENTER_MODE);
-        HAL_Delay(2000);
+        HAL_Delay(2000);*/
         BSP_LCD_Clear(LCD_COLOR_WHITE);
         
         
         /*Init transmission UART*/
-        serial_read.baud(115200); //les bauds de la carte qui a été mesuré
+        serial_read.baud(115200);//les bauds de la carte qui a été mesuré
         serial_read.format(8, SerialBase::None,1);//(nb de bit par trame, pas de parité, un seul stop bit)
         
 
     while (1) {
-        datapr = data;
-        data = 0;
             /* affichage "lecture du message" sur le LCD si un message peut être lu*/
-        if(serial_read.readable()==true){
-            BSP_LCD_Clear(LCD_COLOR_WHITE);
-            BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"lecture du message", CENTER_MODE);
-            serial_read.read(&data, 1);
-        }
+            data[0] = 0;
+            data[1] = 0;
             
-        switch (data){
+        if(serial_read.readable()==true){
+            
+            serial_read.read(&data, 1);
+            data[1] = data[0];
+            serial_read.read(&data, 1);
+            serial_read.write(&data[0], 1);
+            serial_read.write(&data[1], 1);
+            i++;
+        }
+        /*if(i==1){
+            data[1] = data[0];}
+        
+        if(i==2){
+            serial_read.write(&data[0], 1);
+            serial_read.write(&data[1], 1);
+            data[0] = 0;
+            data[1] = 0;
+            i=0;}*/
+        
+            
+        if((data[0]&0x01)==0x01){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing do", CENTER_MODE);
+            //HAL_Delay(2000); 
+        }
+        
+        if((data[0]&0x02)==0x02){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing re", CENTER_MODE);
+            //HAL_Delay(2000);
+        }
+        
+        if((data[0]&0x04)==0x04){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing mi", CENTER_MODE);
+            //HAL_Delay(2000);
+        }
+        
+        if((data[0]&0x08)==0x08){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing fa", CENTER_MODE);
+            //HAL_Delay(2000);
+        }
+        
+        if((data[0]&0x10)==0x10){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing sol", CENTER_MODE);
+        }
+        
+        if((data[0]&0x20)==0x20){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing la", CENTER_MODE);
+            //HAL_Delay(2000);
+        }
+        
+        if((data[0]&0x40)==0x40){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing si", CENTER_MODE);
+            //HAL_Delay(2000); 
+        }
+        
+        if((data[0]&0x80)==0x80){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing do", CENTER_MODE);
+            //HAL_Delay(2000);
+        }
+        
+        if((data[1]&0x81)==0x81){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"playing do2", CENTER_MODE);
+            //HAL_Delay(2000);
+        }
+        
+        if((data[1]&0x82)==0x82){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"playing re2", CENTER_MODE);            
+        }
+        
+        if((data[1]&0x84)==0x84){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"playing fa2", CENTER_MODE);
+            //HAL_Delay(2000);
+            
+        }
+        
+        if((data[1]&0x88)==0x88){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"playing sol2", CENTER_MODE);
+            //HAL_Delay(2000);
+            
+        }  
+        
+        if((data[1]&0x90)==0x90){
+            BSP_LCD_Clear(LCD_COLOR_WHITE);
+            BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"playing la2", CENTER_MODE);
+            //HAL_Delay(2000);
+            
+        }     
+        
+        
+        
+             
+        /*switch (data[0]){
             case 0:
                 BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"attente d'une note", CENTER_MODE);
                 break;
                 
-            case 0x01:
+            case data[0]&&0x01==0x01:
                 BSP_LCD_Clear(LCD_COLOR_WHITE);
                 BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing do", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
                 
-            case 0x02:
+            case data[0]&&0x02==0x02:
                 BSP_LCD_Clear(LCD_COLOR_WHITE);
                 BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing re", CENTER_MODE);
-                HAL_Delay(200);
-                break;
-                
-            case 0x04:
-                BSP_LCD_Clear(LCD_COLOR_WHITE);
-                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing mi", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
                 
-            case 0x08:
+            case data[0]&&0x04==0x04:
+                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing mi", CENTER_MODE);
+                break;
+                
+            case data[0]&&0x08==0x08:
                 BSP_LCD_Clear(LCD_COLOR_WHITE);
                 BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing fa", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
                 
-            case 0x10:
+            case data[0]&&0x10==0x10:
                 BSP_LCD_Clear(LCD_COLOR_WHITE);
                 BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing sol", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
                 
-            case 0x20:
+            case data[0]&&0x20==0x20:
                 BSP_LCD_Clear(LCD_COLOR_WHITE);
                 BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing la", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
-                
-            case 0x40:
+            
+            case data[0]&&0x40==0x40:
                 BSP_LCD_Clear(LCD_COLOR_WHITE);
                 BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing si", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
             
-            case 0x80:
+            case data[0]&&0x80==0x80:
                 BSP_LCD_Clear(LCD_COLOR_WHITE);
                 BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing do", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
                 
-            case 0x81:
+                default :
+                BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"note inconnu", CENTER_MODE);
+                HAL_Delay(2000);
+                break;
+            }
+        
+            
+        switch (data[1]){
+            case 0:
+                BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"attente d'une note", CENTER_MODE);
+                break;
+                
+            case data[1]&&0x81==0x81:
+                BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"playing do2", CENTER_MODE);
+                break;
+                
+            case data[1]&&0x82==0x82:
                 BSP_LCD_Clear(LCD_COLOR_WHITE);
-                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing do2", CENTER_MODE);
+                BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"playing re2", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
                 
-            case 0x82:
+            case data[1]&&0x84==0x84:
                 BSP_LCD_Clear(LCD_COLOR_WHITE);
-                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing re2", CENTER_MODE);
+                BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"playing fa2", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
                 
-            case 0x84:
+            case data[1]&&0x88==0x88:
                 BSP_LCD_Clear(LCD_COLOR_WHITE);
-                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing fa2", CENTER_MODE);
+                BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"playing sol2", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
                 
-            case 0x88:
+            case data[1]&&0x90==0x90:
                 BSP_LCD_Clear(LCD_COLOR_WHITE);
-                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing sol2", CENTER_MODE);
-                HAL_Delay(2000);
-                break;
-                
-            case 0x90:
-                BSP_LCD_Clear(LCD_COLOR_WHITE);
-                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"playing la2", CENTER_MODE);
+                BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"playing la2", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
             
             default :
-                BSP_LCD_DisplayStringAt(0, 1, (uint8_t *)"note inconnu", CENTER_MODE);
+                BSP_LCD_DisplayStringAt(0, 60, (uint8_t *)"note inconnu", CENTER_MODE);
                 HAL_Delay(2000);
                 break;
-            }
+            }*/
                 
                 
             
